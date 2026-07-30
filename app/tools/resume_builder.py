@@ -1,10 +1,11 @@
-"""
+﻿"""
 Tool 6: Resume builder (from scratch)
 Takes a simple form of basic student info and produces a full,
-ATS-friendly structured resume — optionally already tailored toward
+ATS-friendly structured resume -- optionally already tailored toward
 a target role if one is given.
 """
 from app.llm_client import ask_llm_json
+from app.tools.resume_cleaner import clean_resume_json
 
 SYSTEM_PROMPT = """You are an expert resume writer helping a student who has no
 resume yet. You'll receive basic raw input: education, skills they know, projects
@@ -36,4 +37,8 @@ Return JSON:
 
 
 def build_resume_from_scratch(student_input: dict) -> dict:
-    return ask_llm_json(SYSTEM_PROMPT, f"Student input:\n{student_input}", max_tokens=3000)
+    result = ask_llm_json(SYSTEM_PROMPT, f"Student input:\n{student_input}", max_tokens=3000)
+    inferred = result.pop("inferred_bullets", [])
+    result = clean_resume_json(result)
+    result["inferred_bullets"] = inferred
+    return result

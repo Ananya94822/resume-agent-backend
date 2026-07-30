@@ -8,6 +8,7 @@ import json
 from app.config import settings
 from app.agent import agent
 from app.tools.pdf_generator import generate_resume_pdf
+from app.tools.templates import list_templates
 
 settings.validate()
 
@@ -92,13 +93,19 @@ def build_resume_endpoint(req: BuildRequest):
     return agent.build_resume(req.model_dump())
 
 
+@app.get("/api/resume/templates")
+def templates_endpoint():
+    return {"templates": list_templates()}
+
+
 class PdfRequest(BaseModel):
     resume_json: dict
+    template_id: Optional[str] = "classic"
 
 @app.post("/api/resume/download-pdf")
 def download_pdf_endpoint(req: PdfRequest):
     try:
-        pdf_bytes = generate_resume_pdf(req.resume_json)
+        pdf_bytes = generate_resume_pdf(req.resume_json, req.template_id)
     except Exception as e:
         raise HTTPException(500, f"Could not generate PDF: {e}")
 

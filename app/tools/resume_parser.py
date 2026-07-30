@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tool 1: Resume parser
 Takes a raw PDF/DOCX/text resume and turns it into a clean structured
 JSON object the rest of the agent's tools can reason over.
@@ -7,6 +7,7 @@ import io
 import pdfplumber
 import docx
 from app.llm_client import ask_llm_json
+from app.tools.resume_cleaner import clean_resume_json
 
 SYSTEM_PROMPT = """You are a resume-parsing engine. Extract structured data from raw
 resume text. Be exhaustive with skills (include tools, languages, frameworks).
@@ -47,6 +48,7 @@ def parse_resume(file_bytes: bytes, filename: str) -> dict:
     raw_text = extract_text_from_bytes(file_bytes, filename)
     if not raw_text.strip():
         raise ValueError("Could not extract any text from this file. It may be a scanned image.")
-    structured = ask_llm_json(SYSTEM_PROMPT, f"Resume text:\n\n{raw_text}", max_tokens=8000)
+    structured = ask_llm_json(SYSTEM_PROMPT, f"Resume text:\n\n{raw_text}")
+    structured = clean_resume_json(structured)
     structured["_raw_text"] = raw_text
     return structured

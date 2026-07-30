@@ -1,11 +1,12 @@
-"""
+﻿"""
 Tool 5: Resume tailoring
 Rewrites an existing structured resume so it's optimized for a specific
-job description — reordering/emphasizing relevant skills, rewriting
+job description -- reordering/emphasizing relevant skills, rewriting
 bullets to mirror the JD's language (for ATS keyword matching), and
 never fabricating experience the student doesn't have.
 """
 from app.llm_client import ask_llm_json
+from app.tools.resume_cleaner import clean_resume_json
 
 SYSTEM_PROMPT = """You are an expert resume writer for students applying to campus
 placements. You will be given a student's existing structured resume (JSON) and a
@@ -19,7 +20,7 @@ Hard rules:
 - You MAY reorder the skills list to put JD-relevant skills first.
 - Every bullet should start with a strong action verb and, where the original
   data supports it, quantify impact.
-- If the student is missing a required skill entirely, do not fabricate it —
+- If the student is missing a required skill entirely, do not fabricate it --
   that's what the gap-analysis feature is for.
 
 Return the SAME JSON shape as the input resume (name, email, phone, linkedin,
@@ -33,4 +34,8 @@ def tailor_resume(resume_json: dict, jd_analysis: dict) -> dict:
         f"Student's current resume:\n{resume_for_prompt}\n\n"
         f"Target job description analysis:\n{jd_analysis}"
     )
-    return ask_llm_json(SYSTEM_PROMPT, user_prompt, max_tokens=3000)
+    result = ask_llm_json(SYSTEM_PROMPT, user_prompt, max_tokens=3000)
+    notes = result.pop("tailoring_notes", [])
+    result = clean_resume_json(result)
+    result["tailoring_notes"] = notes
+    return result
