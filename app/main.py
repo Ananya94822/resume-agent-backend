@@ -64,9 +64,7 @@ class GapRequest(BaseModel):
 
 @app.post("/api/resume/gap-analysis")
 def gap_analysis_endpoint(req: GapRequest):
-    report = agent.gap_analysis(req.resume_json, req.jd_analysis)
-    return {"report": report}
-
+    return agent.gap_analysis(req.resume_json, req.jd_analysis)
 
 class TailorRequest(BaseModel):
     resume_json: dict
