@@ -115,3 +115,12 @@ def download_pdf_endpoint(req: PdfRequest):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+class InterviewPrepRequest(BaseModel):
+    resume_json: dict
+    jd_analysis: dict
+
+@app.post("/api/interview/prep")
+def interview_prep_endpoint(req: InterviewPrepRequest):
+    return agent.interview_prep(req.resume_json, req.jd_analysis)

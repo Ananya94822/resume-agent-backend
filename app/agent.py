@@ -1,4 +1,4 @@
-"""
+﻿"""
 ResumeAgent: the orchestrator.
 
 Each public method is one capability your app calls. Internally, some
@@ -13,6 +13,7 @@ from app.tools.ats_scorer import score_ats
 from app.tools.resume_tailor import tailor_resume
 from app.tools.resume_builder import build_resume_from_scratch
 from app.tools.skill_resources import search_learning_resources
+from app.tools.interview_prep import get_interview_prep
 
 GAP_SYSTEM_PROMPT = """You are a career-readiness assistant for a college placement
 platform. You'll be given a student's resume skills and a target job description's
@@ -64,4 +65,9 @@ class ResumeAgent:
         return build_resume_from_scratch(student_input)
 
 
+    def interview_prep(self, resume_json: dict, jd_analysis: dict) -> dict:
+        return get_interview_prep(resume_json, jd_analysis)
+
+
 agent = ResumeAgent()
+
