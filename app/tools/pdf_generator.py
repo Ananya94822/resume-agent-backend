@@ -154,6 +154,12 @@ def generate_resume_pdf(resume_json: dict, template_id: str = "classic") -> byte
         _section_header("Skills", styles, tpl, story)
         story.append(Paragraph(", ".join(skills), styles["BodyTextSmall"]))
 
+    currently_building = [s for s in (resume_json.get("currently_building") or []) if _clean(s)]
+    if currently_building:
+        label = (f'<font color="{tpl["accent"]}"><b>Currently Building Skills In: </b></font>'
+                  + ", ".join(currently_building))
+        story.append(Paragraph(label, styles["BodyTextSmall"]))
+
     education = [ed for ed in (resume_json.get("education") or [])
                  if _clean(ed.get("degree")) or _clean(ed.get("institution"))]
     if education:
