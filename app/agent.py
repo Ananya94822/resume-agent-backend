@@ -28,6 +28,43 @@ If there are no gaps at all, return an empty "gaps" list and a congratulatory
 encouragement note."""
 
 
+def _reconstruct_raw_text(resume_json: dict) -> str:
+    """
+    A freshly tailored or freshly built resume never has '_raw_text'.
+    This rebuilds a text blob from the structured fields -- including
+    name and contact info, which the formatting auditor checks for --
+    so scoring has real, complete content to work with.
+    """
+    parts = []
+    if resume_json.get("name"):
+        parts.append(resume_json["name"])
+    contact_parts = [resume_json.get("email", ""), resume_json.get("phone", ""),
+                      resume_json.get("linkedin", ""), resume_json.get("github", "")]
+    contact_line = " | ".join(p for p in contact_parts if p)
+    if contact_line:
+        parts.append(contact_line)
+    if resume_json.get("summary"):
+        parts.append(resume_json["summary"])
+    if resume_json.get("skills"):
+        parts.append(", ".join(resume_json["skills"]))
+    if resume_json.get("currently_building"):
+        parts.append(", ".join(resume_json["currently_building"]))
+    for exp in (resume_json.get("experience") or []):
+        parts.append(exp.get("title", ""))
+        parts.append(exp.get("company", ""))
+        parts.extend(exp.get("bullets") or [])
+    for proj in (resume_json.get("projects") or []):
+        parts.append(proj.get("name", ""))
+        parts.extend(proj.get("tech_used") or [])
+        parts.extend(proj.get("bullets") or [])
+    for ed in (resume_json.get("education") or []):
+        parts.append(ed.get("degree", ""))
+        parts.append(ed.get("institution", ""))
+    if resume_json.get("certifications"):
+        parts.extend(resume_json["certifications"])
+    return "\n".join(p for p in parts if p)
+
+
 class ResumeAgent:
     def parse_resume(self, file_bytes: bytes, filename: str) -> dict:
         return parse_resume(file_bytes, filename)
@@ -36,10 +73,15 @@ class ResumeAgent:
         return analyze_job_description(jd_text)
 
     def ats_score(self, resume_json: dict, jd_analysis: dict) -> dict:
+        raw_text = resume_json.get("_raw_text", "") or ""
+        is_generated = len(raw_text.strip()) < 50
+        if is_generated:
+            raw_text = _reconstruct_raw_text(resume_json)
         return score_ats(
-            resume_raw_text=resume_json.get("_raw_text", ""),
+            resume_raw_text=raw_text,
             resume_skills=resume_json.get("skills", []),
             jd_keywords=jd_analysis.get("ats_keywords", []),
+            skip_format_check=is_generated,
         )
 
     def gap_analysis(self, resume_json: dict, jd_analysis: dict) -> dict:
@@ -52,9 +94,6 @@ class ResumeAgent:
         )
         result = ask_llm_json(GAP_SYSTEM_PROMPT, user_prompt, max_tokens=2000)
 
-        # Safety net: even if the AI missed that a skill is already
-        # covered (e.g. "Relational databases" when MySQL/Django are
-        # already listed), catch and drop it here deterministically.
         real_gaps = [
             gap for gap in result.get("gaps", [])
             if not skill_is_covered(gap.get("skill", ""), resume_skills)
